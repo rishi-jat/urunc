@@ -51,6 +51,7 @@ var uniklog = logrus.WithField("subsystem", "unikontainers")
 var ErrQueueProxy = errors.New("this a queue proxy container")
 var ErrNotUnikernel = errors.New("this is not a unikernel container")
 var ErrNotExistingNS = errors.New("the namespace does not exist")
+var ErrMissingLinuxSpec = errors.New("invalid OCI spec: linux section is required")
 
 // Unikontainer holds the data necessary to create, manage and delete unikernel containers
 type Unikontainer struct {
@@ -294,6 +295,9 @@ func (u *Unikontainer) chooseRootfs() (types.RootfsParams, error) {
 // nolint:gocyclo
 func (u *Unikontainer) Exec(metrics m.Writer) error {
 	metrics.Capture(m.TS15)
+	if u.Spec.Linux == nil {
+		return ErrMissingLinuxSpec
+	}
 
 	// container Paths
 	// Make sure paths are clean
@@ -977,6 +981,9 @@ func (u *Unikontainer) FormatNsenterInfo() (rdr io.Reader, retErr error) {
 	}()
 
 	const numNS = 8
+	if u.Spec.Linux == nil {
+		return nil, ErrMissingLinuxSpec
+	}
 	var writePaths bool
 	var writeFlags bool
 	var cloneFlags uint32
